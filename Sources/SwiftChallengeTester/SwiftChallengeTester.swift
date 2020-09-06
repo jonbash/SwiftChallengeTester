@@ -32,8 +32,9 @@ public extension CodeChallengeTestCases {
 
     var isEmpty: Bool { expected.isEmpty }
 
-    mutating func evaluate(_ outputEqualsExpected: (Output, Output) -> Bool) -> Self {
-        failures = expected.compactMap { ioPair -> Failure? in
+    func evaluate(_ outputEqualsExpected: (Output, Output) -> Bool) -> Self {
+        var new = self
+        new.failures = expected.compactMap { ioPair -> Failure? in
             let o = output(for: ioPair.key)
             let e = ioPair.value
 
@@ -43,7 +44,7 @@ public extension CodeChallengeTestCases {
                 return Failure(input: ioPair.key, expectedOutput: e, actualOutput: o)
             }
         }
-        return self
+        return new
     }
 
     func printFailures() {
@@ -77,7 +78,7 @@ public extension CodeChallengeTestCases {
 }
 
 public extension CodeChallengeTestCases where Output: Equatable {
-    mutating func evaluate() -> Self {
+    func evaluate() -> Self {
         evaluate { $0 == $1 }
     }
 }
