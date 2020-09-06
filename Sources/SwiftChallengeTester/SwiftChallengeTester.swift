@@ -1,13 +1,13 @@
 public struct CodeChallengeTestCases<Input, Output> {
     public var title: String?
-    public var expected: KeyValuePairs<Input, Output>
+    public var expected: KeyValuePairs<Input, [Output]>
     public var solution: (Input) -> Output
 
     internal var failures: [Failure]?
 
     public init(
         title: String? = nil,
-        expected: KeyValuePairs<Input, Output> = [:],
+        expected: KeyValuePairs<Input, [Output]> = [:],
         solution: @escaping (Input) -> Output)
     {
         self.title = title
@@ -19,7 +19,7 @@ public struct CodeChallengeTestCases<Input, Output> {
 public extension CodeChallengeTestCases {
     struct Failure {
         public let input: Input
-        public let expectedOutput: Output
+        public let expectedOutput: [Output]
         public let actualOutput: Output
 
         public func print() {
@@ -36,13 +36,14 @@ public extension CodeChallengeTestCases {
         var new = self
         new.failures = expected.compactMap { ioPair -> Failure? in
             let o = output(for: ioPair.key)
-            let e = ioPair.value
+            let es = ioPair.value
 
-            if outputEqualsExpected(o, e) {
-                return nil
-            } else {
-                return Failure(input: ioPair.key, expectedOutput: e, actualOutput: o)
+            for e in es {
+                if outputEqualsExpected(o, e) {
+                    return nil
+                }
             }
+            return Failure(input: ioPair.key, expectedOutput: es, actualOutput: o)
         }
         return new
     }
@@ -90,7 +91,7 @@ extension CodeChallengeTestCases {
 
     private func printEvaluation(
         for input: Input,
-        expected: Output,
+        expected: [Output],
         actual: Output)
     {
         print("Input:        \t\(input)\n"
