@@ -3,6 +3,8 @@ public struct CodeChallengeTestCases<Input, Output> {
     public var expected: KeyValuePairs<Input, Output>
     public var solution: (Input) -> Output
 
+    internal var failures: [Failure]?
+
     public init(
         title: String? = nil,
         expected: KeyValuePairs<Input, Output> = [:],
@@ -30,8 +32,8 @@ public extension CodeChallengeTestCases {
 
     var isEmpty: Bool { expected.isEmpty }
 
-    func evaluate(_ outputEqualsExpected: (Output, Output) -> Bool) -> [Failure] {
-        expected.compactMap { ioPair -> Failure? in
+    mutating func evaluate(_ outputEqualsExpected: (Output, Output) -> Bool) -> Self {
+        failures = expected.compactMap { ioPair -> Failure? in
             let o = output(for: ioPair.key)
             let e = ioPair.value
 
@@ -41,22 +43,23 @@ public extension CodeChallengeTestCases {
                 return Failure(input: ioPair.key, expectedOutput: e, actualOutput: o)
             }
         }
+        return self
     }
 
-    func printFailures(_ outputEqualsExpected: (Output, Output) -> Bool) {
-        printFailures(evaluate(outputEqualsExpected))
-    }
+    func printFailures() {
+        guard let evaluatedFailures = failures else {
+            return print("Output must be evaluated before printing.")
+        }
 
-    func printFailures(_ failures: [Failure]) {
         let titleText = title ?? "\(Input.self) -> \(Output.self)"
 
-        if failures.isEmpty {
+        if evaluatedFailures.isEmpty {
             print("All tests passed for '\(titleText)'!\n")
             return
         }
 
         print("Tests failed for '\(titleText)':")
-        for f in failures {
+        for f in evaluatedFailures {
             printEvaluation(for: f.input,
                             expected: f.expectedOutput,
                             actual: f.actualOutput)
@@ -74,12 +77,8 @@ public extension CodeChallengeTestCases {
 }
 
 public extension CodeChallengeTestCases where Output: Equatable {
-    func evaluate() -> [Failure] {
+    mutating func evaluate() -> Self {
         evaluate { $0 == $1 }
-    }
-
-    func printFailures() {
-        printFailures { $0 == $1 }
     }
 }
 
@@ -94,24 +93,8 @@ extension CodeChallengeTestCases {
         actual: Output)
     {
         print("Input:        \t\(input)\n"
-                +  "Expected:     \t\(expected)\n"
-                +  "Actual output:\t\(actual)"
+           +  "Expected:     \t\(expected)\n"
+           +  "Actual output:\t\(actual)"
         )
     }
 }
-
-public extension Array {
-    func print<I, O>() where Element == CodeChallengeTestCases<I, O>.Failure {
-        let titleText = "\(I.self) -> \(O.self)"
-
-        if self.isEmpty {
-            Swift.print("All tests passed for '\(titleText)'!\n")
-            return
-        }
-
-        Swift.print("Tests failed for '\(titleText)':")
-        self.forEach { $0.print() }
-        Swift.print("\n----------------\n")
-    }
-}
-
